@@ -26,10 +26,10 @@ nCores <- 5
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 minSites <- 2000
 ploidy <- 2
-stat <- c("dist", "pi")
+stat <- c("phyDist", "pi")
 pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("PxH", 7), "PaG",
                                                       "PxH", "PaR", "PxS", "PaS","PxS", "PaS","PxS",
-                                                       "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
+                                                      "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
                                                       "PxG", "PaG", "PaC", "PaC", "PaC"))
 
 VCFheader <- scanVcfHeader(fileName)
@@ -40,13 +40,13 @@ contigs <- rownames(contigMD)
 
 prog <- c()
 start.time <- Sys.time()
-data <- mclapply(contigs[1:10], mc.cores = nCores, function(con){
+data <- mclapply(contigs, mc.cores = nCores, function(con){
   prog[1] <<- which(con == contigs)
   length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
   if(length >= winSize){
     nWindows <- floor(length / winSize)
 
-    test <- mclapply(seq(1, nWindows), mc.cores = nCores, function(winN){
+    test <- lapply(seq(1, nWindows), function(winN){
 
       pos <- winN * winSize + 1
 
@@ -74,40 +74,41 @@ data <- mclapply(contigs[1:10], mc.cores = nCores, function(con){
         #remove from matix and transpose so samples are rows
         s <- t(l[!k,])
         if("pi" %in% stat){
-        pi <- lapply(split(pops, pops$pop), function(x){
-          #make population matrix
-           popGeno <- s[rownames(s) %in% as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
-           # get DNAbin
-           dna <- as.DNAbin(popGeno)
-           #determine pi for pop
-           pi <- data.frame(pi = nuc.div(dna), pop = x$pop[1])
-        }) %>% bind_rows() # bind rows together into 1 df
+          pi <- lapply(split(pops, pops$pop), function(x){
+            #make population matrix
+            popGeno <- s[rownames(s) %in% as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
+            # get DNAbin
+            dna <- as.DNAbin(popGeno)
+            #determine pi for pop
+            pi <- data.frame(pi = nuc.div(dna), pop = x$pop[1])
+          }) %>% bind_rows() # bind rows together into 1 df
         }
         #convert matrix to DNAbin object from ape
+
         dna <- as.DNAbin(s)
         #get genetic distance
-        if("dist" %in% stat) dist <- dist.dna(dna)
-
+        if("phyDist" %in% stat) {
+          dist <- dist.dna(dna, as.matrix = TRUE, model = "N", pairwise.deletion = TRUE)
+          l <- dist[paste(sampleNames[1], 1:ploidy, sep = "/"), paste(sampleNames[2], 1:ploidy, sep = "/")]
+          mean(l)
+        }
         # to get average distances pull pops out of matrix using vector of names for rows and cols
         #take average and input into data_frame
 
+        #start on nei's Dxy using formula from http://mycor.nancy.inra.fr/egglib/releases/3.0.0a/stats.pdf
+        if("neiDist" %in% stat){
+          lapply(rownames(s), function(x){
+            lapply(rownames(s), function(y){
+              sum(!s[x,] == s[y,])/ncol(s)
+            })
+          })
 
-
-
-        # test genind
-        # vcf[vcf == "."] <- "N/N"
-        # names <- rownames(vcf)
-        # names <- gsub("_.*", "", names)
-        # names <- gsub("\\.", "_", names)
-        # rownames(vcf) <- names
-        # genInd <- df2genind(t(vcf), sep = "/", ploidy = 2)
-        # dist <- nei.dist(genInd)
         }
+
+      }
       else {
         dist <- NA
       }
-
-      dist
     })
   }
   else{

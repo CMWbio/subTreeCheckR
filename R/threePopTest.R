@@ -34,7 +34,7 @@ library(reshape2)
 library(phangorn)
 library(phytools)
 
-subTrees <- read.tree("../PANAMA.ALLSHARED.w100.rerooted.nwk")
+subTrees <- read.tree("~/Desktop/Tree-TipR//PANAMA.ALLSHARED.w100.rerooted.nwk")
 
 distMList<- subTrees %>% lapply(FUN = function(x){
   matrix <- cophenetic(x)
@@ -46,12 +46,12 @@ metaD <- data_frame(samples = samples, groups = groups)
 
 
 
-threePop <- function(subTrees, metaD, cores = 1){
+threePop <- function(subTrees, metaD, cores = 5){
 
   stopifnot(is.data.frame(metaD))
   if(length(metaD) != 2 | !all(colnames(metaD) == c("samples", "groups"))) stop("Object metaD does not contain 2 columns named 'samples' and 'groups'")
   if(!all(c("P1", "P2", "P3") %in% unique(metaD$groups))) stop("Column 'groups' metaD object does not contain the groups P1, P2 and P3")
-  if(!is.numeric(cores) | cores < detectCores()) stop("Value of cores is either non-numeric or greater than total number of cores - 1")
+  if(!is.numeric(cores) | cores > detectCores()) stop("Value of cores is either non-numeric or greater than total number of cores - 1")
   if(class(subTrees) == "character") subTrees <- read.tree(subTrees)
 
   distMList<- subTrees %>% lapply(FUN = function(x){
@@ -74,3 +74,9 @@ threePop <- function(subTrees, metaD, cores = 1){
     }) %>% bind_rows()
   }) %>% bind_rows()
 }
+
+
+start.time <- Sys.time()
+t1 <- threePop(subTrees = subTrees, metaD = metaD)
+end <- Sys.time()
+end - start.time

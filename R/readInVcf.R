@@ -18,15 +18,15 @@ library(pegas)
 library(phangorn)
 
 
-
-read.vcf()
-
 winSize <- 100000
-nCores <- 5
+nCores <- 7
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 minSites <- 2000
 ploidy <- 2
-stat <- c("phyDist", "pi")
+stat <- c("dxy", "pi", "da")
+
+sequenceNames <- rownames(s)
+sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
 pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("PxH", 7), "PaG",
                                                       "PxH", "PaR", "PxS", "PaS","PxS", "PaS","PxS",
                                                       "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
@@ -36,12 +36,12 @@ VCFheader <- scanVcfHeader(fileName)
 
 contigMD <- as.data.frame(VCFheader@header$contig)
 contigs <- rownames(contigMD)
+contigs <- contigs[contigs != "KB207950.1"]
 
 
 prog <- c()
 start.time <- Sys.time()
-data <- mclapply(contigs, mc.cores = nCores, function(con){
-  prog[1] <<- which(con == contigs)
+data <- mclapply(contigs[20:400], mc.cores = nCores, function(con){
   length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
   if(length >= winSize){
     nWindows <- floor(length / winSize)
@@ -49,12 +49,15 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
     test <- lapply(seq(1, nWindows), function(winN){
 
       pos <- winN * winSize + 1
+      start <- pos - winSize
+      end <- pos
 
-      p <- ScanVcfParam(which = GRanges(seqnames = con, ranges = IRanges(start = pos - winSize, end = pos)))
+      p <- ScanVcfParam(which = GRanges(seqnames = con, ranges = IRanges(start = start, end = end)))
 
+      nSites <- 0
       nSites <- length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges)
 
-      if(nSites >= minSites){
+      if(nSites >= minSites ){
         #read in vcf
         vcf <- readGT(TabixFile(fileName), nucleotide = TRUE, param = p)
         #convert missing to Ns
@@ -73,115 +76,89 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
         k <- Reduce("|", p)
         #remove from matix and transpose so samples are rows
         s <- t(l[!k,])
-        if("pi" %in% stat){
-          pi <- lapply(split(pops, pops$pop), function(x){
-            #make population matrix
-            popGeno <- s[rownames(s) %in% as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
-            # get DNAbin
-            dna <- as.DNAbin(popGeno)
-            #determine pi for pop
-            pi <- data.frame(pi = nuc.div(dna), pop = x$pop[1])
-          }) %>% bind_rows() # bind rows together into 1 df
-        }
-        #convert matrix to DNAbin object from ape
-
+        #make sequence matrix DNAbin from ape package
         dna <- as.DNAbin(s)
-        #get genetic distance
-        if("phyDist" %in% stat) {
-          dist <- dist.dna(dna, as.matrix = TRUE, model = "N", pairwise.deletion = TRUE)
-          l <- dist[paste(sampleNames[1], 1:ploidy, sep = "/"), paste(sampleNames[2], 1:ploidy, sep = "/")]
-          mean(l)
-        }
-        # to get average distances pull pops out of matrix using vector of names for rows and cols
-        #take average and input into data_frame
+        #get raw distances using ape::dist.dna as a matrix to calculate dxy, pi and da from
+        dist <- dist.dna(dna, as.matrix = TRUE, model = "raw", pairwise.deletion = TRUE)
 
-        #start on nei's Dxy using formula from http://mycor.nancy.inra.fr/egglib/releases/3.0.0a/stats.pdf
-        if("neiDist" %in% stat){
-          lapply(rownames(s), function(x){
-            lapply(rownames(s), function(y){
-              sum(!s[x,] == s[y,])/ncol(s)
-            })
+        #using formula from http://mycor.nancy.inra.fr/egglib/releases/3.0.0a/stats.pdf
+
+        #make pop list
+        popList <-  split(pops, pops$pop)
+
+        #calculate dxy for populations from Nei 1987
+        dxy <- lapply(popList, function(x){
+          lapply(popList, function(y){
+            if(!setequal(x$sampleNames, y$sampleNames)){
+              #population distance matrix for pairwise pop
+              popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(y$sampleNames), 1:ploidy, paste, sep = "/"))]
+              #make a tibble with the average number of pairwise differences
+              dxy <- data_frame(mean(popD))
+              #name col
+              colnames(dxy) <-  paste0(x$pop[1], "v" , y$pop[1], "_dxy")
+              dxy
+            }
+          }) %>% bind_cols() #put all onto one row
+        })  %>% bind_cols() #bind rows together
+
+        #calculate nucleotide diversity from Nei 1987
+        if("pi" %in% stat){
+          pi <- lapply(popList, function(x){
+            #make population matrix
+            popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/"))]
+            n <- ncol(popD)
+            # get nucleotide diversity
+            pi <- sum(popD)/(n*(n-1)/2)
+            #determine pi for pop
+            piDF <- data_frame(pi)
+            # set colnames
+            colnames(piDF) <- paste(x$pop[1],"pi", sep = "_")
+            piDF
+          }) %>% bind_cols() #put all onto one row
+        }
+
+        #calculate da from from Nei 1987
+        if("da" %in% stat){
+
+         da <- lapply(1:length(dxy), function(x){
+           #get dxy pairwise comparison name from colnames of dxy
+            dxyName <- colnames(dxy)[1]
+            #remove the dxy from the end
+            compName <- gsub("_.*", "", dxyName)
+            #get sample names
+            samples <- unlist(strsplit(compName, "v"))
+
+            #get pi for population x
+            xPi <- pi[[paste0(dxyNameShort[1], "_pi")]]
+            #pi for population y
+            yPi <- pi[[paste0(dxyNameShort[2], "_pi")]]
+
+            #carry out da calculation from Nei 1987
+            da <- dxy[[dxyName]] - ((xPi + yPi)/2)
+            #make tibble
+            da <- data_frame(da)
+            #colnames
+            colnames(da) <- paste0(compName, "_da")
+            da
           })
 
         }
-
+      #bind all columns together
+      div <- bind_cols(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites, pi, dxy, da)
       }
       else {
-        dist <- NA
+      div <- data_frame(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites)
       }
-    })
+    }) %>% bind_rows() #bind all windows on contig together
   }
   else{
-    test <- "contig too small"
+    warning("contig too small")
   }
   test
-})
+}) %>% bind_rows() #bind all contigs together
 
 
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
 
-
-
-
-
-vcf <- vcf[,1:50]
-ncol(vcf)
-
-
-t <- as.data.frame(vcf)
-
-l <- lapply(1:ncol(t), function(x){
-  separate(t, colnames(t[x]), into = paste(colnames(t[x]), c(1:2), sep = "/"))[x:(x1)]
-}) %>% bind_cols()
-
-
-test <- dist(t(l), method = "manhattan")
-
-
-p <- lapply(1:ncol(l), function(x){
-  nchar(t(l[[x]])) > 1
-})
-
-k <- Reduce("|", p)
-
-s <- t(l[!k,])
-
-test <- as.matrix("Y", "Y")
-
-
-sequenceNames <- rownames(s)
-sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
-
-dna <- as.DNAbin(s)
-
-
-dist <- dist.dna(dna)
-dist <- as.matrix(dist)
-test <- rowMeans2(x = dist, cols = which(sequenceNames == paste(sampleNames[1], 1:2, sep = "/")))
-
-rowMeans2(dist[,1:2])
-
-
-
-
-
-plot(hclust(dist.dna(dna)))
-
-
-
-a <- paste(s[1,], collapse = "") %>% set_names(sampleNames[1])
-b <- paste(s[2,], collapse = "") %>% set_names(sampleNames[2])
-c <- paste(s[3,], collapse = "") %>% set_names(sampleNames[3])
-d <- paste(s[4,], collapse = "") %>% set_names(sampleNames[4])
-
-a <- as.DNAbin(a)
-
-list1 <- list(a,b)
-list2 <- list(c,d)
-mapply(adist,a,b)
-
-foo <- function(x,y){
-  mapply(adist, x, y) / nchar(y))
-}

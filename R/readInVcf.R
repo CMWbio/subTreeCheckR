@@ -23,7 +23,7 @@ nCores <- 7
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 minSites <- 2000
 ploidy <- 2
-stat <- c("dxy", "pi", "da")
+stat <- c("dxy", "pi", "da", "Dt")
 
 sequenceNames <- rownames(s)
 sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
@@ -35,9 +35,7 @@ pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("
 VCFheader <- scanVcfHeader(fileName)
 
 contigMD <- as.data.frame(VCFheader@header$contig)
-
-contigsMD <- filter(contigMD, rownames(contigMD) == "KB207950.1") %>% set_rownames("KB207950.1")
-contigs <- rownames(contigsMD)
+contigs <- rownames(contigMD)
 
 prog <- c()
 start.time <- Sys.time()
@@ -86,6 +84,8 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
         popList <-  split(pops, pops$pop)
 
         #calculate dxy for populations from Nei 1987
+
+      if("dxy" %in% stat){
         dxy <- lapply(popList, function(x){
           lapply(popList, function(y){
             if(!setequal(x$sampleNames, y$sampleNames)){
@@ -99,6 +99,9 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
             }
           }) %>% bind_cols() #put all onto one row
         })  %>% bind_cols() #bind rows together
+      } else {
+        dxy <- c()
+      }
 
         #calculate nucleotide diversity from Nei 1987
         if("pi" %in% stat){
@@ -114,23 +117,26 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
             colnames(piDF) <- paste(x$pop[1],"pi", sep = "_")
             piDF
           }) %>% bind_cols() #put all onto one row
+        } else {
+          pi <- c()
         }
 
         #calculate da from from Nei 1987
-        if("da" %in% stat){
+        #can only calculate da if dxy and pi are known
+        if(all(c("pi", "dxy", "da") %in% stat)){
 
          da <- lapply(1:length(dxy), function(x){
            #get dxy pairwise comparison name from colnames of dxy
-            dxyName <- colnames(dxy)[1]
+            dxyName <- colnames(dxy)[x]
             #remove the dxy from the end
             compName <- gsub("_dxy", "", dxyName)
             #get sample names
             samples <- unlist(strsplit(compName, "v"))
 
             #get pi for population x
-            xPi <- pi[[paste0(dxyNameShort[1], "_pi")]]
+            xPi <- pi[[paste0(samples[1], "_pi")]]
             #pi for population y
-            yPi <- pi[[paste0(dxyNameShort[2], "_pi")]]
+            yPi <- pi[[paste0(samples[2], "_pi")]]
 
             #carry out da calculation from Nei 1987
             da <- dxy[[dxyName]] - ((xPi + yPi)/2)
@@ -139,14 +145,46 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
             #colnames
             colnames(da) <- paste0(compName, "_da")
             da
-          })
-
+         }) %>% bind_cols()
+        } else {
+          da <- c()
         }
-      #bind all columns together
-      div <- bind_cols(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites, pi, dxy, da)
+
+         #Tajimas nutrality test without an outgroup using polymorphic sites  for S
+         #Pi is needed to determine Tajima's D
+         if("Dt" %in% stat){
+          Dt <- lapply(popList, function(x){
+
+             if(length(x$sampleNames)*ploidy >= 4){
+
+               popBase <- s[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
+               dnaPop <- as.DNAbin(popBase)
+               Dt <- tajima.test(dnaPop)
+
+               Dt <- data_frame(Dt[[1]])
+               # set colnames
+               colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
+               Dt
+
+             } else{
+               Dt <- data_frame(NA)
+               colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
+               Dt
+
+             }
+           }) %>% bind_cols()
+
+         } else {
+           Dt <- c()
+         }
+
+
+        #bind all columns together
+        div <- bind_cols(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites, dxy, pi, da, Dt)
+
       }
       else {
-      div <- data_frame(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites)
+        div <- data_frame(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites)
       }
     }) %>% bind_rows() #bind all windows on contig together
   }

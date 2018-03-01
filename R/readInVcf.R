@@ -35,13 +35,13 @@ pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("
 VCFheader <- scanVcfHeader(fileName)
 
 contigMD <- as.data.frame(VCFheader@header$contig)
-contigs <- rownames(contigMD)
-contigs <- contigs[contigs != "KB207950.1"]
 
+contigsMD <- filter(contigMD, rownames(contigMD) == "KB207950.1") %>% set_rownames("KB207950.1")
+contigs <- rownames(contigsMD)
 
 prog <- c()
 start.time <- Sys.time()
-data <- mclapply(contigs[20:400], mc.cores = nCores, function(con){
+data <- mclapply(contigs, mc.cores = nCores, function(con){
   length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
   if(length >= winSize){
     nWindows <- floor(length / winSize)
@@ -54,10 +54,9 @@ data <- mclapply(contigs[20:400], mc.cores = nCores, function(con){
 
       p <- ScanVcfParam(which = GRanges(seqnames = con, ranges = IRanges(start = start, end = end)))
 
-      nSites <- 0
-      nSites <- length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges)
+      nSites <- tryCatch(length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges),  error=function(e) 0)
 
-      if(nSites >= minSites ){
+      if(nSites >= minSites){
         #read in vcf
         vcf <- readGT(TabixFile(fileName), nucleotide = TRUE, param = p)
         #convert missing to Ns
@@ -124,7 +123,7 @@ data <- mclapply(contigs[20:400], mc.cores = nCores, function(con){
            #get dxy pairwise comparison name from colnames of dxy
             dxyName <- colnames(dxy)[1]
             #remove the dxy from the end
-            compName <- gsub("_.*", "", dxyName)
+            compName <- gsub("_dxy", "", dxyName)
             #get sample names
             samples <- unlist(strsplit(compName, "v"))
 

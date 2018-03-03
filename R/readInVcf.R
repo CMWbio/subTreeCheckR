@@ -16,14 +16,15 @@ library(d3heatmap)
 library(poppr)
 library(pegas)
 library(phangorn)
+library(pbapply)
 
 
-winSize <- 100000
-nCores <- 7
+winSize <- 50000
+nCores <- 5
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
-minSites <- 2000
+minSites <- 100
 ploidy <- 2
-stat <- c("dxy", "pi", "da", "Dt")
+stat <- c("dxy", "pi", "da")
 
 sequenceNames <- rownames(s)
 sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
@@ -37,14 +38,32 @@ VCFheader <- scanVcfHeader(fileName)
 contigMD <- as.data.frame(VCFheader@header$contig)
 contigs <- rownames(contigMD)
 
+
+#alastairu
+pl <- c("KLS0337",
+        "KLS0333","KLS0219","KLS0348","WAM174520",
+        "DARK_TENIUS","KLS0119","MT182","R36639",
+        "MT174","X01049","KLS0114","A00998","X01014",
+        "X01044","X01010","MW04719","KLS0118")
+
+## Sample/Population dataframe
+pops <- data.frame(sampleNames = pl, pop = c(rep("Afuscus",2), rep("Alaevis",2), rep("Atenius",2), rep("Hcurtus",3),
+                                             "Hcogg", rep("Hcyano",3), rep("Hmelano",2), "Hparvi", rep("Hviper",2)))
+
+contigs <- c("scaffold1|size703937","scaffold2|size540562","scaffold3|size527680",
+             "scaffold4|size481093","scaffold5|size399909","scaffold6|size324431",
+             "scaffold7|size322635","scaffold8|size308202","scaffold9|size294065",
+             "scaffold10|size290244","scaffold11|size286520","scaffold12|size270235")
+
+
 prog <- c()
 start.time <- Sys.time()
-data <- mclapply(contigs, mc.cores = nCores, function(con){
+data <- pblapply(contigs[1:3], function(con){
   length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
   if(length >= winSize){
     nWindows <- floor(length / winSize)
 
-    test <- lapply(seq(1, nWindows), function(winN){
+    test <- mclapply(seq(1, nWindows), mc.cores = nCores, function(winN){
 
       pos <- winN * winSize + 1
       start <- pos - winSize
@@ -56,25 +75,7 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
 
       if(nSites >= minSites){
         #read in vcf
-        vcf <- readGT(TabixFile(fileName), nucleotide = TRUE, param = p)
-        #convert missing to Ns
-        vcf[vcf == "."] <- "N/N"
-        #make dataframe for wrangling
-        t <- as.data.frame(vcf)
-        #separate alleles from either "A/A" or "A|A" to "A" "A"
-        l <- lapply(1:ncol(t), function(x){
-          separate(t, colnames(t[x]), into = paste(colnames(t[x]), c(1:ploidy), sep = "/"))[x:(x + (ploidy - 1))]
-        }) %>% bind_cols()
-        #identify indels as it would ruin the alignement
-        p <- lapply(1:ncol(l), function(x){
-          nchar(t(l[[x]])) > 1
-        })
-        #reduce logical vector so that any FALSE == FALSE
-        k <- Reduce("|", p)
-        #remove from matix and transpose so samples are rows
-        s <- t(l[!k,])
-        #make sequence matrix DNAbin from ape package
-        dna <- as.DNAbin(s)
+        dna <- vcfWindow(fileName = fileName, contig = con, param = p, ploidy = ploidy)
         #get raw distances using ape::dist.dna as a matrix to calculate dxy, pi and da from
         dist <- dist.dna(dna, as.matrix = TRUE, model = "raw", pairwise.deletion = TRUE)
 
@@ -85,23 +86,23 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
 
         #calculate dxy for populations from Nei 1987
 
-      if("dxy" %in% stat){
-        dxy <- lapply(popList, function(x){
-          lapply(popList, function(y){
-            if(!setequal(x$sampleNames, y$sampleNames)){
-              #population distance matrix for pairwise pop
-              popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(y$sampleNames), 1:ploidy, paste, sep = "/"))]
-              #make a tibble with the average number of pairwise differences
-              dxy <- data_frame(mean(popD))
-              #name col
-              colnames(dxy) <-  paste0(x$pop[1], "v" , y$pop[1], "_dxy")
-              dxy
-            }
-          }) %>% bind_cols() #put all onto one row
-        })  %>% bind_cols() #bind rows together
-      } else {
-        dxy <- c()
-      }
+        if("dxy" %in% stat){
+          dxy <- lapply(popList, function(x){
+            lapply(popList, function(y){
+              if(!setequal(x$sampleNames, y$sampleNames)){
+                #population distance matrix for pairwise pop
+                popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(y$sampleNames), 1:ploidy, paste, sep = "/"))]
+                #make a tibble with the average number of pairwise differences
+                dxy <- data_frame(mean(popD))
+                #name col
+                colnames(dxy) <-  paste0(x$pop[1], "v/" , y$pop[1], "_dxy")
+                dxy
+              }
+            }) %>% bind_cols() #put all onto one row
+          })  %>% bind_cols() #bind rows together
+        } else {
+          dxy <- c()
+        }
 
         #calculate nucleotide diversity from Nei 1987
         if("pi" %in% stat){
@@ -125,13 +126,13 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
         #can only calculate da if dxy and pi are known
         if(all(c("pi", "dxy", "da") %in% stat)){
 
-         da <- lapply(1:length(dxy), function(x){
-           #get dxy pairwise comparison name from colnames of dxy
+          da <- lapply(1:length(dxy), function(x){
+            #get dxy pairwise comparison name from colnames of dxy
             dxyName <- colnames(dxy)[x]
             #remove the dxy from the end
             compName <- gsub("_dxy", "", dxyName)
             #get sample names
-            samples <- unlist(strsplit(compName, "v"))
+           samples <- unlist(strsplit(compName, "v/"))
 
             #get pi for population x
             xPi <- pi[[paste0(samples[1], "_pi")]]
@@ -145,38 +146,38 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
             #colnames
             colnames(da) <- paste0(compName, "_da")
             da
-         }) %>% bind_cols()
+          }) %>% bind_cols()
         } else {
           da <- c()
         }
 
-         #Tajimas nutrality test without an outgroup using polymorphic sites  for S
-         #Pi is needed to determine Tajima's D
-         if("Dt" %in% stat){
+        #Tajimas nutrality test without an outgroup using polymorphic sites  for S
+        #Pi is needed to determine Tajima's D
+        if("Dt" %in% stat){
           Dt <- lapply(popList, function(x){
 
-             if(length(x$sampleNames)*ploidy >= 4){
+            if(length(x$sampleNames)*ploidy >= 4){
 
-               popBase <- s[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
-               dnaPop <- as.DNAbin(popBase)
-               Dt <- tajima.test(dnaPop)
+              popBase <- s[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
+              dnaPop <- as.DNAbin(popBase)
+              Dt <- tajima.test(dnaPop)
 
-               Dt <- data_frame(Dt[[1]])
-               # set colnames
-               colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
-               Dt
+              Dt <- data_frame(Dt[[1]])
+              # set colnames
+              colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
+              Dt
 
-             } else{
-               Dt <- data_frame(NA)
-               colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
-               Dt
+            } else{
+              Dt <- data_frame(NA)
+              colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
+              Dt
 
-             }
-           }) %>% bind_cols()
+            }
+          }) %>% bind_cols()
 
-         } else {
-           Dt <- c()
-         }
+        } else {
+          Dt <- c()
+        }
 
 
         #bind all columns together
@@ -198,4 +199,3 @@ data <- mclapply(contigs, mc.cores = nCores, function(con){
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
-

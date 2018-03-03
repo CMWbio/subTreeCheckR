@@ -16,8 +16,8 @@ popShiny <- function(fileName, contigs = "all"){
     dashboardHeader(title = "Population Statistics"),
     dashboardSidebar(
       sidebarMenu(
-        menuItem(text = "", icon = icon("compressed", lib = "glyphicon"), tabName = "readVCF"),
-        menuItem(text = "", icon = icon("tree"), tabName = "trees")
+        menuItem(text = "", icon = icon("upload", "fa-2x"), tabName = "readVCF"),
+        menuItem(text = "", icon = icon("tree", "fa-2x"), tabName = "trees")
       ), width = "5%"
     ),
     dashboardBody(
@@ -49,8 +49,8 @@ popShiny <- function(fileName, contigs = "all"){
     observeEvent(input$import, {
       winSize <- as.numeric(input$winSize)
       percentage <- 0
-      ploidy <- input$ploidy
-      minSites <- input$minSites
+      ploidy <- as.numeric(input$ploidy)
+      minSites <- as.numeric(input$minSites)
 
       if(all(input$scaffoldNames == "all")){
         scaf <- contigs
@@ -71,15 +71,15 @@ popShiny <- function(fileName, contigs = "all"){
               start <- pos - winSize
               end <- pos
 
-              p <- ScanVcfParam(which = GRanges(seqnames = scaf, ranges = IRanges(start = start, end = end)))
+              p <- ScanVcfParam(which = GRanges(seqnames = con, ranges = IRanges(start = start, end = end)))
 
               nSites <- tryCatch(length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges),  error=function(e) 0)
 
               if(nSites >= minSites){
                 #read in vcf
-                dna <- vcfWindow(fileName = fileName, contig = scaf, param = p, ploidy = ploidy)
+                dna <- vcfWindow(fileName = fileName, contig = con, param = p, ploidy = ploidy)
               } else dna <- c(NA)
-              names(dna) <- paste0(scaf, ":", start, "-", end)
+              names(dna) <- paste0(con, ":", start, "-", end)
               dna
             })
             scafDNA

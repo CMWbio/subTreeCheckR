@@ -12,6 +12,8 @@
 #'
 #' @return \code{list} of trees in \code{phy} format containing all discordant trees.
 #'
+#' @importFrom phytools getDescendants
+#'
 #' @examples
 #'
 #'

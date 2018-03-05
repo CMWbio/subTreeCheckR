@@ -26,6 +26,15 @@
 #'
 #' @return A \code{tibble} containing populations statistics passed from \code{stat}
 #'
+#'
+#' @importFrom pbapply pblapply
+#' @importFrom tibble data_frame
+#' @importFrom magrittr %>%
+#' @importFrom dplyr bind_rows
+#' @importFrom dplyr bind_cols
+#' @importFrom pegas tajima.test
+#'
+#'
 #' @examples
 #'
 #'

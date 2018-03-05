@@ -1,11 +1,10 @@
-Package: subTreeCheckR
+Package: weavR
 Type: Package
-Title: Identify Discordant Trees
+Title: weavR: Windowed Evolutionary Analysis and Visualisation in R.
 Version: 0.1.0
 Author: Christopher M. Ward
 Maintainer: The package maintainer <christopher.ward@adelaide.edu.au>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Carries out phylogenetics and common population genetic statistics on VCF windows.
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

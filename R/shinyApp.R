@@ -10,6 +10,13 @@
 #'
 #' @return Shiny GUI to visulaise and explore results
 #'
+#'
+#' @import shiny
+#' @import shinydashboard
+#' @importFrom shinyFiles shinyFilesButton
+#' @importFrom shinyFiles shinyFileChoose
+#'
+#'
 #' @examples
 #'
 #' @export
@@ -41,7 +48,7 @@ popShiny <- function(fileName, contigs = "all"){
       tabItem(tabName = "readVCF",
               h2("Read in VCF Data"),
               h5("Select VCF File"),
-              # shinyFilesButton(id = "VCF", title = "Select VCF File", label = "Browse...", multiple = FALSE),
+              shinyFilesButton(id = "VCF", title = "Select VCF File", label = "Browse...", multiple = FALSE),
               textInput(inputId = "winSize", value = "10000", label = "Select Window Size")),
       selectizeInput("scaffoldNames", choices = NULL, label = "Select Contigs to Read in from VCF", multiple = TRUE),
       textInput("minSites", value = "1000", label = "Minimum sites in window to calculate from"),
@@ -54,10 +61,10 @@ popShiny <- function(fileName, contigs = "all"){
 
   server <- function(input, output, session){
 
-    # volumes <- getVolumes()
-    # observe({
-    #   shinyFileChoose(input, "VCF", roots = volumes, session = session)
-    # })
+     volumes <- getVolumes()
+     observe({
+       shinyFileChoose(input, "VCF", roots = volumes, session = session)
+    })
 
     values <- reactiveValues()
 

@@ -13,6 +13,8 @@
 #'
 #' @return An object of class \code{DNAbin} from the package \code{ape}
 #'
+#' @importFrom tidyr separate
+#'
 #' @examples
 #'
 #' @export

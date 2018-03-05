@@ -13,10 +13,14 @@
 #'
 #' @return \code{list} of trees in \code{phy} format.
 #'
+#' @import VariantAnnotation
+#' @import ape
+#' @importFrom parallel mclapply
+#'
 #' @examples
 #'
 #' @export
-#' @rdname buildWindowTrees
+#' @rdname buildLocalTrees
 # library(readr)
 # library(ape)
 # library(magrittr)
@@ -37,7 +41,7 @@
 # library(phangorn)
 
 
-buildWindowTrees <- function(fileName, contigs, winSize = 100000,
+buildLocalTrees <- function(fileName, contigs, winSize = 100000,
                           subModel = "raw", minSites, ploidy = 2,
                           output = "tree", nCores = 2){
 

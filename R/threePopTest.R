@@ -14,6 +14,7 @@
 #'
 #' @return UI data for fastQC shiny.
 #'
+#'
 #' @examples
 #'
 #' @export

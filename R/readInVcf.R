@@ -24,9 +24,9 @@ nCores <- 5
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 minSites <- 100
 ploidy <- 2
-stat <- c("dxy", "pi", "da")
+stat <- c("dxy")
 
-sequenceNames <- rownames(s)
+sequenceNames <- rownames(dna)
 sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
 pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("PxH", 7), "PaG",
                                                       "PxH", "PaR", "PxS", "PaS","PxS", "PaS","PxS",
@@ -93,9 +93,9 @@ data <- pblapply(contigs[1:3], function(con){
                 #population distance matrix for pairwise pop
                 popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(y$sampleNames), 1:ploidy, paste, sep = "/"))]
                 #make a tibble with the average number of pairwise differences
-                dxy <- data_frame(mean(popD))
+                dxy <- data_frame(mean(popD), sd(popD))
                 #name col
-                colnames(dxy) <-  paste0(x$pop[1], "v/" , y$pop[1], "_dxy")
+                colnames(dxy) <-  paste0(x$pop[1], "v/" , y$pop[1], c("_dxy", "_SDdxy"))
                 dxy
               }
             }) %>% bind_cols() #put all onto one row

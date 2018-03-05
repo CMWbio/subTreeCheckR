@@ -1,24 +1,43 @@
-library(readr)
-library(ape)
-library(magrittr)
-library(dplyr)
-library(tidyr)
-library(scales)
-library(parallel)
-library(ggplot2)
-library(plotly)
-library(geiger)
-library(phytools)
-library(VariantAnnotation)
-library(stringr)
-library(msa)
-library(d3heatmap)
-library(poppr)
-library(pegas)
-library(phangorn)
+#' Three Population Tree Tip Proportion
+#'
+#' @description Carries out Three Population Subtree Tip proportions from \code{Ward & Baxter (2018), GBE}
+#'
+#' @details Currently some plots can take a while to render if the \code{FastqcDataList} passed to
+#' \code{fastqcInput} has many elements
+#'
+#' @param subTrees Trees to carry out 3 populaiton Tree Tip proportions on. Can be either a \code{character} file path or \code{multiphy}
+#' object from the package \code{ape}
+#' @param metaD Trees to carry out 3 populaiton Tree Tip proportions on. Can be either a \code{character} file path or \code{multiphy}
+#' object from the package \code{ape}
+#'
+#'
+#' @return \code{list} of trees in \code{phy} format.
+#'
+#' @examples
+#'
+#' @export
+#' @rdname buildWindowTrees
+# library(readr)
+# library(ape)
+# library(magrittr)
+# library(dplyr)
+# library(tidyr)
+# library(scales)
+# library(parallel)
+# library(ggplot2)
+# library(plotly)
+# library(geiger)
+# library(phytools)
+# library(VariantAnnotation)
+# library(stringr)
+# library(msa)
+# library(d3heatmap)
+# library(poppr)
+# library(pegas)
+# library(phangorn)
 
 
-buildSubTrees <- function(fileName, contigs, winSize = 100000,
+buildWindowTrees <- function(fileName, contigs, winSize = 100000,
                           subModel = "raw", minSites, ploidy = 2,
                           output = "tree", nCores = 2){
 

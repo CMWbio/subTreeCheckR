@@ -9,44 +9,47 @@
 #' object from the package \code{ape}
 #' @param metaD Trees to carry out 3 populaiton Tree Tip proportions on. Can be either a \code{character} file path or \code{multiphy}
 #' object from the package \code{ape}
+#' @param nCores \code{numeric}. Number of cores to run analysis on.
 #'
 #'
 #' @return UI data for fastQC shiny.
 #'
 #' @examples
-#' \dontrun{
-#'  samples <- rownames(distMList[[1]])[order(c(rownames(distMList[[1]])))]
-#'  groups <-  c(rep("I2", 4), "t", "t", rep("I1", 4), "t", "t", rep("O", 4))
 #'
 #' @export
 #' @rdname threePop
-library(readr)
-library(ape)
-library(magrittr)
-library(dplyr)
-library(tidyr)
-library(scales)
-library(parallel)
-library(ggplot2)
-library(plotly)
-library(geiger)
-library(reshape2)
-library(phangorn)
-library(phytools)
+# library(readr)
+# library(ape)
+# library(magrittr)
+# library(dplyr)
+# library(tidyr)
+# library(scales)
+# library(parallel)
+# library(ggplot2)
+# library(plotly)
+# library(geiger)
+# library(reshape2)
+# library(phangorn)
+# library(phytools)
+#
+# subTrees <- read.tree("~/Desktop/Tree-TipR/PANAMA.ALLSHARED.w100.rerooted.nwk")
+#
+# subtrees(subTrees[[1]])
+#
+#
+#
+#
+# distMList<- subTrees %>% lapply(FUN = function(x){
+#   matrix <- cophenetic(x)
+# })
+#
+# samples <- rownames(distMList[[1]])[order(c(rownames(distMList[[1]])))]
+# groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P1", 4), "t")
+# metaD <- data_frame(samples = samples, groups = groups)
+#
 
-subTrees <- read.tree("~/Desktop/Tree-TipR//PANAMA.ALLSHARED.w100.rerooted.nwk")
 
-distMList<- subTrees %>% lapply(FUN = function(x){
-  matrix <- cophenetic(x)
-})
-
-samples <- rownames(distMList[[1]])[order(c(rownames(distMList[[1]])))]
-groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P1", 4), "t")
-metaD <- data_frame(samples = samples, groups = groups)
-
-
-
-threePop <- function(subTrees, metaD, cores = 5){
+threePop <- function(subTrees, metaD, nCores){
 
   stopifnot(is.data.frame(metaD))
   if(length(metaD) != 2 | !all(colnames(metaD) == c("samples", "groups"))) stop("Object metaD does not contain 2 columns named 'samples' and 'groups'")
@@ -75,8 +78,8 @@ threePop <- function(subTrees, metaD, cores = 5){
   }) %>% bind_rows()
 }
 
-
-start.time <- Sys.time()
-t1 <- threePop(subTrees = subTrees, metaD = metaD)
-end <- Sys.time()
-end - start.time
+#
+# start.time <- Sys.time()
+# t1 <- threePop(subTrees = subTrees, metaD = metaD)
+# end <- Sys.time()
+# end - start.time

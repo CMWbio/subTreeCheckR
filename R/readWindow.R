@@ -1,3 +1,23 @@
+#' Read window from VCF
+#'
+#' @description Reads in a specified window from a tabix indexed Variant Call Format
+#'
+#' @details Uses the package \code{VariantAnnotation} to read in a locus (window) from the target VCF,
+#'
+#'
+#' @param fileName A \code{character} vector of length one containing the full path name for a Tabix indexed VCF
+#' @param contig A single element \code{character} vector containing the contig name in the VCF
+#' @param param An object of class \code{ScanVcfParam} containing a \code{GRanges} object for the target locus
+#' @param ploidy \code{Integer} or \code{Numeric}. The ploidy of the VCF, as called by Variant Caller
+#'
+#'
+#' @return An object of class \code{DNAbin} from the package \code{ape}
+#'
+#' @examples
+#'
+#' @export
+#' @rdname vcfWindow
+
 vcfWindow <-  function(fileName, contig, param, ploidy){
           #read in vcf
           vcf <- readGT(TabixFile(fileName), nucleotide = TRUE, param = param)

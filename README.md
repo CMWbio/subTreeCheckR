@@ -2,4 +2,4 @@
 Windowed Evolutionary Analysis and Visualisation in R
 
 
-![alt text](https://ibb.co/dq6YiS)
+![alt text](https://image.ibb.co/eFz8Hn/weavr.png)

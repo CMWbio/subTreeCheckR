@@ -5,7 +5,7 @@
 \title{Calculate population statistics along contigs}
 \usage{
 popStatWindows(fileName, contigs = "all", winSize = 1e+05, minSites,
-  ploidy = 2, stat = c("dxy"), pops, nCores = 1)
+  ploidy = 2, stat = c("dxy", "pi", "da"), pops, nCores = 1)
 }
 \arguments{
 \item{fileName}{A \code{character} vector of length one containing the full path name for a Tabix indexed VCF}

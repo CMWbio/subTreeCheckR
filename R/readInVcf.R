@@ -75,7 +75,7 @@
 #                                                       "PxH", "PaR", "PxS", "PaS","PxS", "PaS","PxS",
 #                                                       "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
 #                                                       "PxG", "PaG", "PaC", "PaC", "PaC"))
-#
+
 # VCFheader <- scanVcfHeader(fileName)
 #
 # contigMD <- as.data.frame(VCFheader@header$contig)
@@ -103,7 +103,7 @@
 # start.time <- Sys.time()
 
 popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
-                           minSites, ploidy = 2, stat = c("dxy"),
+                           minSites, ploidy = 2, stat = c("dxy", "pi", "da"),
                            pops, nCores = 1){
 
   #read in VCF header
@@ -112,7 +112,11 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
   #get contig Metadata
   contigMD <- as.data.frame(VCFheader@header$contig)
 
-  if(contigs == "all") contigs <- rownames(contigMD)
+  if(all(contigs == "all")) contigs <- rownames(contigMD)
+
+  # set minSites to 1
+  if(missing(minSites)) minSites <- 0.05 * winSize
+
 
   data <- pblapply(contigs, function(con){
     length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
@@ -182,7 +186,7 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
           #can only calculate da if dxy and pi are known
           if(all(c("pi", "dxy", "da") %in% stat)){
 
-            da <- lapply(1:length(dxy), function(x){
+            da <- lapply(seq(from = 1, to = length(dxy), by = 2), function(x){
               #get dxy pairwise comparison name from colnames of dxy
               dxyName <- colnames(dxy)[x]
               #remove the dxy from the end

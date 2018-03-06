@@ -4,11 +4,13 @@
 \alias{buildLocalTrees}
 \title{Build a tree for each window}
 \usage{
-buildLocalTrees(fileName, contigs, winSize = 1e+05, subModel = "raw",
-  minSites, ploidy = 2, nCores = 2, write = NA)
+buildLocalTrees(fileName, DNAwin, contigs, winSize = 1e+05,
+  subModel = "raw", minSites, ploidy = 2, nCores = 2, write = NA)
 }
 \arguments{
-\item{fileName}{A \code{character} vector of length one containing the full path name for a Tabix indexed VCF}
+\item{fileName}{\code{character}. Full path name for a Tabix indexed VCF file.}
+
+\item{DNAwin}{\code{list} of multiple \code{DNAbin}. A list of already imported VCF files.}
 
 \item{contigs}{\code{character}. Default is \code{"all"} Contigs to extract windows from.}
 

@@ -8,4 +8,22 @@ Description: Carries out phylogenetics and common population genetic statistics 
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
+Depends:
+ VariantAnnotation,
+ ape
+Imports: 
+ shiny,
+ shinyFiles,
+ shinydashboard,
+ dplyr,
+ magrittr,
+ parallel,
+ pbapply,
+ pegas,
+ phytools,
+ tibble,
+ tidyr,
+ GenomicRanges,
+ IRanges
 RoxygenNote: 6.0.1
+

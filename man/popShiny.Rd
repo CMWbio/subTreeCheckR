@@ -4,7 +4,7 @@
 \alias{popShiny}
 \title{Shiny GUI}
 \usage{
-popShiny(fileName, contigs = "all")
+popShiny()
 }
 \arguments{
 \item{fileName}{A \code{character} vector of length one containing the full path name for a Tabix indexed VCF}

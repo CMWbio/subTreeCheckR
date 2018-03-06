@@ -13,8 +13,10 @@
 #'
 #' @import shiny
 #' @import shinydashboard
-#' @importFrom shinyFiles shinyFilesButton
-#' @importFrom shinyFiles shinyFileChoose
+#' @import shinyFiles
+#'
+#'
+#'
 #'
 #'
 #' @examples
@@ -30,54 +32,67 @@
 #
 
 
-popShiny <- function(fileName, contigs = "all"){
+popShiny <- function(){
 
-  header <- scanVcfHeader(TabixFile(fileName))
-  contigMD <- as.data.frame(header@header$contig)
-  if(contigs == "all") contigs <- rownames(contigMD)
+
 
   ui <- dashboardPage(
-    dashboardHeader(title = "Population Statistics"),
+    dashboardHeader(title = "weavR"),
     dashboardSidebar(
       sidebarMenu(
         menuItem(text = "", icon = icon("upload", "fa-2x"), tabName = "readVCF"),
         menuItem(text = "", icon = icon("tree", "fa-2x"), tabName = "trees")
-      ), width = "5%"
+      ), width = "59px"
     ),
     dashboardBody(
-      tabItem(tabName = "readVCF",
-              h2("Read in VCF Data"),
-              h5("Select VCF File"),
-              shinyFilesButton(id = "VCF", title = "Select VCF File", label = "Browse...", multiple = FALSE),
-              textInput(inputId = "winSize", value = "10000", label = "Select Window Size")),
-      selectizeInput("scaffoldNames", choices = NULL, label = "Select Contigs to Read in from VCF", multiple = TRUE),
-      textInput("minSites", value = "1000", label = "Minimum sites in window to calculate from"),
-      textInput("ploidy", value = "2", label = "Ploidy of samples"),
-      actionButton("import", "Import Windows"),
-      textOutput("nrows")
-
+      tabItems(tabItem(tabName = "readVCF",
+                       box(h5("Select VCF File"),
+                           shinyFilesButton(id = "VCF", title = "Select VCF File", label = "Browse...", multiple = FALSE),
+                           textInput(inputId = "winSize", value = "10000", label = "Select Window Size"),
+                           selectizeInput("scaffoldNames", choices = NULL, label = "Select Contigs to Read in from VCF", multiple = TRUE),
+                           textInput("minSites", value = "1000", label = "Minimum sites in window to calculate from"),
+                           textInput("ploidy", value = "2", label = "Ploidy of samples"),
+                           actionButton("import", "Import Windows"),
+                           textOutput("nrows"), collapsible = TRUE, title = "Read in VCF Data", width = 4)
+      ), tabItem(tabName = "trees")
+      )
     )
   )
 
   server <- function(input, output, session){
 
+    values <- reactiveValues()
+
      volumes <- getVolumes()
      observe({
        shinyFileChoose(input, "VCF", roots = volumes, session = session)
-    })
+     })
 
-    values <- reactiveValues()
 
-    updateSelectizeInput(session, "scaffoldNames", choices = c("all", contigs))
+     observeEvent(input$VCF, {
+       fileSelected <- shinyFiles::parseFilePaths(volumes, input$VCF)
+       values$fileName <- as.character(fileSelected$datapath)
+     })
+
+     observeEvent(input$VCF, {
+       header <- scanVcfHeader(TabixFile(values$fileName))
+       values$contigMD <- as.data.frame(header@header$contig)
+       values$contigs <- rownames(values$contigMD)
+       updateSelectizeInput(session, "scaffoldNames", choices = c("all", values$contigs))
+     })
+
 
     observeEvent(input$import, {
       winSize <- as.numeric(input$winSize)
       percentage <- 0
       ploidy <- as.numeric(input$ploidy)
       minSites <- as.numeric(input$minSites)
+      fileName <- values$fileName
+      contigMD <- values$contigMD
+      nCores <- 5
 
       if(all(input$scaffoldNames == "all")){
-        scaf <- contigs
+        scaf <- values$contigs
       } else {
         scaf <- input$scaffoldNames
       }

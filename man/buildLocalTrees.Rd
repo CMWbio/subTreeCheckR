@@ -2,27 +2,38 @@
 % Please edit documentation in R/buildSubTrees.R
 \name{buildLocalTrees}
 \alias{buildLocalTrees}
-\title{Three Population Tree Tip Proportion}
+\title{Build a tree for each window}
 \usage{
 buildLocalTrees(fileName, contigs, winSize = 1e+05, subModel = "raw",
-  minSites, ploidy = 2, output = "tree", nCores = 2)
+  minSites, ploidy = 2, nCores = 2, write = NA)
 }
 \arguments{
-\item{subTrees}{Trees to carry out 3 populaiton Tree Tip proportions on. Can be either a \code{character} file path or \code{multiphy}
-object from the package \code{ape}}
+\item{fileName}{A \code{character} vector of length one containing the full path name for a Tabix indexed VCF}
 
-\item{metaD}{Trees to carry out 3 populaiton Tree Tip proportions on. Can be either a \code{character} file path or \code{multiphy}
-object from the package \code{ape}}
+\item{contigs}{\code{character}. Default is \code{"all"} Contigs to extract windows from.}
+
+\item{winSize}{\code{numeric}. Default is \code{100000}. Window size in base pairs.}
+
+\item{subModel}{\code{character}. The substitution model to fit to the data. Accepts nucleotide models defined in \code{ape::dist.dna}:
+"raw", "N", "TS", "TV", "JC69", "K80", "F81", "K81", "F84", "BH87", "T92", "TN93", and "GG95."}
+
+\item{minSites}{\code{numeric}. Default is 10 percent of winSize. The minimum number of sites within a window to consider it.}
+
+\item{ploidy}{\code{numeric}. The ploidy of the VCF, as called by Variant Caller.}
+
+\item{nCores}{\code{numeric}. Number of cores to run analysis on.}
+
+\item{write}{\code{character}. Default is NA, will only return the R object. The directory to write the trees out to.}
 }
 \value{
-\code{list} of trees in \code{phy} format.
+\code{list} of trees in \code{phy} format. Newick format trees in a specified directory.
 }
 \description{
-Carries out Three Population Subtree Tip proportions from \code{Ward & Baxter (2018), GBE}
+Build local trees for each window along a contig.
 }
 \details{
-Currently some plots can take a while to render if the \code{FastqcDataList} passed to
-\code{fastqcInput} has many elements
+Builds a tree using data from each window across a contig. Defined as a local tree these
+represent the evolutionary history of the window.
 }
 \examples{
 

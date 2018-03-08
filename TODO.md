@@ -4,6 +4,7 @@
 
 - Finish converting scrips to functions
 - Add da to its on script that you provide what popX and popY are to the function to control negativity
+- add gene function to read in data for genes with % of exon genotypes present.
 - Should I add ABBA BABA? 
 
 ## Shiny

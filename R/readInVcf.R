@@ -62,13 +62,13 @@
 # library(pbapply)
 #
 #
-# winSize <- 50000
-# nCores <- 5
-# fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
-# minSites <- 100
-# ploidy <- 2
-# stat <- c("dxy")
-#
+winSize <- 100000
+nCores <- 6
+fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
+minSites <- 100
+ploidy <- 2
+stat <- c("dxy")
+
 # sequenceNames <- rownames(dna)
 # sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
 # pops <- data.frame(sampleNames = sampleNames, pop = c("PxC", "PxC", "PaC", rep("PxH", 7), "PaG",
@@ -76,10 +76,10 @@
 #                                                       "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
 #                                                       "PxG", "PaG", "PaC", "PaC", "PaC"))
 
-# VCFheader <- scanVcfHeader(fileName)
-#
-# contigMD <- as.data.frame(VCFheader@header$contig)
-# contigs <- rownames(contigMD)
+VCFheader <- scanVcfHeader(fileName)
+
+contigMD <- as.data.frame(VCFheader@header$contig)
+contigs <- rownames(contigMD)
 #
 #
 # #alastairu
@@ -92,12 +92,12 @@
 # ## Sample/Population dataframe
 # pops <- data.frame(sampleNames = pl, pop = c(rep("Afuscus",2), rep("Alaevis",2), rep("Atenius",2), rep("Hcurtus",3),
 #                                              "Hcogg", rep("Hcyano",3), rep("Hmelano",2), "Hparvi", rep("Hviper",2)))
-#
+
 # contigs <- c("scaffold1|size703937","scaffold2|size540562","scaffold3|size527680",
 #              "scaffold4|size481093","scaffold5|size399909","scaffold6|size324431",
 #              "scaffold7|size322635","scaffold8|size308202","scaffold9|size294065",
 #              "scaffold10|size290244","scaffold11|size286520","scaffold12|size270235")
-#
+# #
 #
 # prog <- c()
 # start.time <- Sys.time()
@@ -123,7 +123,7 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
     if(length >= winSize){
       nWindows <- floor(length / winSize)
 
-      test <- mclapply(seq(1, nWindows), mc.cores = nCores, function(winN){
+      pbmclapply(seq(1, nWindows), mc.cores = nCores, function(winN){
 
         pos <- winN * winSize + 1
         start <- pos - winSize
@@ -250,11 +250,10 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
       }) %>% bind_rows() #bind all windows on contig together
     }
     else{
-      warning("contig too small")
+      data_frame(scaffold = con)
     }
-    test
   }) %>% bind_rows() #bind all contigs together
-
+data
 }
 
 #

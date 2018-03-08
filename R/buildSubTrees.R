@@ -99,7 +99,7 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
 
             dist <- dist.dna(dna, model = subModel, pairwise.deletion = TRUE)
             div <- list(nj(dist))
-            names(div) <- paste0(con, ":", (end - start)/2)
+            names(div) <- paste0(con, ":", end, "..", start)
 
           }
           else {
@@ -115,10 +115,11 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
   }) %>% unlist(recursive = FALSE)
   }
   else {
-    nestedList <- mclapply(length(dna), function(x){
-      dist <- dist.dna(dna[[x]], model = subModel, pairwise.deletion = TRUE)
+    nestedList <- pbmclapply(1:length(DNAwin), mc.cores = nCores, function(x){
+      dist <- dist.dna(DNAwin[[x]][[1]], model = subModel, pairwise.deletion = TRUE)
       div <- list(nj(dist))
-      names(div) <- names(DNAwin)[x]
+      names(div) <- names(DNAwin)[[x]]
+      div
     }) %>% unlist(recursive = FALSE)
   }
 

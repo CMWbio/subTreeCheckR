@@ -48,7 +48,7 @@
 # groups2 <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P1", 4), "t")
 # groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P2", 4), "t")
 # cladeStr <- data_frame(samples = samples, cladeLabels = groups, groups = groups2)
-#
+# #
 #
 # clad <- test[[1]]
 

@@ -50,14 +50,14 @@
 # library(phangorn)
 
 
-buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
+buildLocalTrees <- function(fileName, DNAwin = NA, contigs, winSize = 100000,
                             subModel = "raw", minSites, ploidy = 2,
-                            nCores = 2, write = NA){
+                            nCores = 5, write = NA, haploidize = TRUE){
 
   # checks
   if(!is.character(fileName) | length(fileName) > 1) stop("fileName must ba a character vector of length 1")
   stopifnot(file.exists(fileName))
-  stopifnot(is.list(DNAwin))
+  # stopifnot(is.list(DNAwin))
   if(!missing(contigs) && !is.character(contigs)) stop("fileName must ba a character vector of length 1")
   if(!is.numeric(winSize)) stop("winSize should be numeric")
   if(!is.character(subModel) | length(subModel) >1) stop("subModel must be a character vector of length 1")
@@ -65,6 +65,8 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
                       "K81", "F84", "BH87", "T92", "TN93", "GG95", "logdet", "paralin", "indel", "indelblock"))
     if(!type %in% c("tree", "distance matrix"))
       stopifnot(nCores < detectCores() - 1)
+
+
 
   # read in vcf header
   vcfHeader <- scanVcfHeader(fileName)
@@ -78,7 +80,7 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
   if(missing(contigs)) contigs <- rownames(contigMD)
 
 
-  if(missing(DNAwin)){
+  if(is.na(DNAwin)){
   nestedList <- pblapply(contigs, function(con){
     length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
     if(length >= winSize){
@@ -95,17 +97,19 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
 
           if(nSites >= minSites){
 
-            dna <- vcfWindow(fileName = fileName, contig = con, param = p, ploidy = ploidy)
-
-            dist <- dist.dna(dna, model = subModel, pairwise.deletion = TRUE)
-            div <- list(nj(dist))
-            names(div) <- paste0(con, ":", end, "..", start)
+            dna <- vcfWindow(fileName = fileName, contig = con, param = p, ploidy = ploidy, haploidize = haploidize, header = vcfHeader)
+            dna <- as.DNAbin(dna)
+            dist <- dist.dna(dna, model = "K80", pairwise.deletion = TRUE)
+            tree <- nj(dist)
+            tree$edge.length <- abs(tree$edge.length)
+            tree <- list(tree)
+            names(tree) <- paste0(con, ":", end, "..", start)
 
           }
           else {
-            div <- list(NA)
+            tree <- list(NA)
           }
-          div
+          tree
         }) %>% unlist(recursive = FALSE)#bind all windows on contig together
       }
     else{
@@ -113,7 +117,7 @@ buildLocalTrees <- function(fileName, DNAwin, contigs, winSize = 100000,
     }
     distanceList
   }) %>% unlist(recursive = FALSE)
-  }
+ }
   else {
     nestedList <- pbmclapply(1:length(DNAwin), mc.cores = nCores, function(x){
       dist <- dist.dna(DNAwin[[x]][[1]], model = subModel, pairwise.deletion = TRUE)

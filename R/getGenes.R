@@ -1,7 +1,9 @@
 gff <- "../Pea Project/References/ref_DBM_FJ_V1.1_scaffolds.gff3"
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 
-getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1, nCores = 5, fastaOut = "~/Desktop/Tree-TipR/fasta_test/"){
+getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1,
+                     nCores = 5, fastaOut = "~/Desktop/Tree-TipR/fasta_test/",
+                     haploidize = TRUE, ploidy = 2){
 
   allGR <- import.gff(gff)
 
@@ -32,6 +34,8 @@ getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1, nCo
 
   }
 
+  featureList <- featureList[1:10]
+
   vcfHeader <- scanVcfHeader(fileName)
 
   genesList <- pbmclapply(1:length(featureList), mc.cores = nCores, function(x){
@@ -42,7 +46,7 @@ getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1, nCo
 
     nSites <- tryCatch(length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges),  error=function(e) 0)
     if(nSites >= minSites){
-      dat <- vcfWindow(fileName = fileName, ploidy = 2, param = p, header = vcfHeader)
+      dat <- vcfWindow(fileName = fileName, ploidy = ploidy, param = p, header = vcfHeader, haploidize = haploidize)
       dna <- as.DNAbin(dat)
 
       dnaCat <- lapply(dna, function(x) as.character(x[1:length(x)]))

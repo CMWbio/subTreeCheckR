@@ -80,7 +80,7 @@ buildLocalTrees <- function(fileName, DNAwin = NA, contigs, winSize = 100000,
   if(missing(contigs)) contigs <- rownames(contigMD)
 
 
-  if(is.na(DNAwin)){
+  if(any(is.na(DNAwin))){
   nestedList <- pblapply(contigs, function(con){
     length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
     if(length >= winSize){
@@ -100,7 +100,7 @@ buildLocalTrees <- function(fileName, DNAwin = NA, contigs, winSize = 100000,
             dna <- vcfWindow(fileName = fileName, contig = con, param = p, ploidy = ploidy, haploidize = haploidize, header = vcfHeader)
             dna <- as.DNAbin(dna)
             dist <- dist.dna(dna, model = "K80", pairwise.deletion = TRUE)
-            tree <- nj(dist)
+            tree <- upgma(dist)
             tree$edge.length <- abs(tree$edge.length)
             tree <- list(tree)
             names(tree) <- paste0(con, ":", end, "..", start)
@@ -119,11 +119,13 @@ buildLocalTrees <- function(fileName, DNAwin = NA, contigs, winSize = 100000,
   }) %>% unlist(recursive = FALSE)
  }
   else {
-    nestedList <- pbmclapply(1:length(DNAwin), mc.cores = nCores, function(x){
-      dist <- dist.dna(DNAwin[[x]][[1]], model = subModel, pairwise.deletion = TRUE)
-      div <- list(nj(dist))
-      names(div) <- names(DNAwin)[[x]]
-      div
+    nestedList <- lapply(1:15, function(x){
+      dist <- dist.dna(DNAwin[[x]], model = subModel, pairwise.deletion = TRUE)
+      tree <- upgma(dist)
+      tree$edge.length <- abs(tree$edge.length)
+      tree <- list(tree)
+      names(tree) <- names(DNAwin)[x]
+      tree
     }) %>% unlist(recursive = FALSE)
   }
 

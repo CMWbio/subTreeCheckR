@@ -34,7 +34,9 @@ getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1,
 
   }
 
-  featureList <- featureList[1:10]
+  featureList <- featureList[1:100]
+
+  # end function to only get all the GRanges add a function called "popStatGenes" and rename readInVcf to "popStatWindows"
 
   vcfHeader <- scanVcfHeader(fileName)
 
@@ -57,8 +59,11 @@ getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1,
 
       fastaName <- paste0(fastaOut, "/", geneName)
       cat(file=fastaName, paste(paste0(">",names(dnaCat)), sapply(dnaCat, paste, collapse=""), sep="\n"), sep="\n")
+
+      dna <- list(dna)
+      names(dna) <- featureList[[x]]$Name[1]
       dna
     }
-  })
+  }) %>% unlist(recursive = FALSE)
   genesList
 }

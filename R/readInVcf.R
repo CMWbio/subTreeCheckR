@@ -40,34 +40,34 @@
 #'
 #' @export
 #' @rdname popStatWindows
-
-# library(readr)
-# library(ape)
-# library(magrittr)
-# library(dplyr)
-# library(tidyr)
-# library(scales)
-# library(parallel)
-# library(ggplot2)
-# library(plotly)
-# library(geiger)
-# library(phytools)
-# library(VariantAnnotation)
-# library(stringr)
-# library(msa)
-# library(d3heatmap)
-# library(poppr)
-# library(pegas)
-# library(phangorn)
-# library(pbapply)
+#
+library(readr)
+library(ape)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(parallel)
+library(ggplot2)
+library(plotly)
+library(geiger)
+library(phytools)
+library(VariantAnnotation)
+library(stringr)
+library(msa)
+library(d3heatmap)
+library(poppr)
+library(pegas)
+library(phangorn)
+library(pbapply)
 #
 #
-winSize <- 100000
-nCores <- 6
-fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
-minSites <- 100
-ploidy <- 2
-stat <- c("dxy")
+# winSize <- 100000
+# nCores <- 6
+# fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
+# minSites <- 100
+# ploidy <- 2
+# stat <- c("dxy")
 
 # sequenceNames <- rownames(dna)
 # sampleNames <- gsub("/.*", "", sequenceNames) %>% unique()
@@ -76,11 +76,11 @@ stat <- c("dxy")
 #                                                       "PaS", "PaS", "PxS", "PxG", "PaG", "PaG",
 #                                                       "PxG", "PaG", "PaC", "PaC", "PaC"))
 
-VCFheader <- scanVcfHeader(fileName)
-
-contigMD <- as.data.frame(VCFheader@header$contig)
-contigs <- rownames(contigMD)
+# VCFheader <- scanVcfHeader(fileName)
 #
+# contigMD <- as.data.frame(VCFheader@header$contig)
+# contigs <- rownames(contigMD)
+# #
 #
 # #alastairu
 # pl <- c("KLS0337",

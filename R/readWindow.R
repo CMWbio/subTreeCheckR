@@ -21,11 +21,15 @@
 #' @export
 #' @rdname vcfWindow
 
-vcfWindow <-  function(fileName, contig, start, end, ploidy){
+vcfWindow <-  function(fileName, contig, start, end, ploidy, param, header){
 
-  p <- ScanVcfParam(which = GRanges(seqnames = contig, ranges = IRanges(start = start, end = end)))
+  if(missing(param)) p <- ScanVcfParam(which = GRanges(seqnames = contig, ranges = IRanges(start = start, end = end)))
+  else p <- param
   #read in vcf
   vcf <- readGT(TabixFile(fileName), nucleotide = TRUE, param = p)
+  #set colnames
+  colnames(vcf) <- header@samples
+
   #convert missing to Ns
   vcf[vcf == "."] <- "N/N"
   #make dataframe for wrangling
@@ -42,9 +46,6 @@ vcfWindow <-  function(fileName, contig, start, end, ploidy){
   notIndel <- Reduce("|", indelMat)
   #remove from matix and transpose so samples are rows
   alleleMat <- t(windowDF[!notIndel,])
-  #make sequence matrix DNAbin from ape package
-  dna <- list(as.DNAbin(alleleMat))
-  names <- dna
 
 
 

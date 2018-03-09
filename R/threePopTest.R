@@ -44,10 +44,10 @@
 #   matrix <- cophenetic(x)
 # })
 #
-samples <- rownames(distMList[[1]])[order(c(rownames(distMList[[1]])))]
-groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P1", 4), "t")
-metaD <- data_frame(samples = samples, groups = groups)
-#
+# samples <- rownames(distMList[[1]])[order(c(rownames(distMList[[1]])))]
+# groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P1", 4), "t")
+# metaD <- data_frame(samples = samples, groups = groups)
+# #
 
 
 threePop <- function(subTrees, metaD, nCores){

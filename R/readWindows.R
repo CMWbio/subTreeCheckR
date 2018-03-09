@@ -83,7 +83,9 @@ vcfWindows <- function(fileName, contigs, winSize, nCores, ploidy){
 
         if(nSites >= minSites){
           #read in vcf
-          dna <- list(vcfWindow(fileName = fileName, contig = con, start, end, ploidy = ploidy))
+          dna <- vcfWindow(fileName = fileName, contig = con, start, end, ploidy = ploidy)
+          #make sequence matrix DNAbin from ape package
+          dna <- list(as.DNAbin(dna))
           names(dna) <- paste0(con, ":", end, "..", start)
         }
         else{

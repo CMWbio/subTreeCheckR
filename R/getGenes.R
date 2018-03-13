@@ -1,9 +1,7 @@
 gff <- "../Pea Project/References/ref_DBM_FJ_V1.1_scaffolds.gff3"
 fileName <- "~/Desktop/Tree-TipR/Plutella_SNPsOnly.vcf.gz"
 
-getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1,
-                     nCores = 5, fastaOut = "~/Desktop/Tree-TipR/fasta_test/",
-                     haploidize = TRUE, ploidy = 2){
+getGenes <- function(fileName, gff, feature = "gene", nCores = 5){
 
   allGR <- import.gff(gff)
 
@@ -31,39 +29,8 @@ getGenes <- function(fileName, gff, feature = "gene", featureCoverage = 0.1,
 
       gr
     })
-
   }
+  featureList[1:100]
 
-  featureList <- featureList[1:100]
 
-  # end function to only get all the GRanges add a function called "popStatGenes" and rename readInVcf to "popStatWindows"
-
-  vcfHeader <- scanVcfHeader(fileName)
-
-  genesList <- pbmclapply(1:length(featureList), mc.cores = nCores, function(x){
-
-    p <- ScanVcfParam(which = featureList[[x]])
-
-    minSites <- round(sum(featureList[[1]]@ranges@width) * featureCoverage)
-
-    nSites <- tryCatch(length(scanVcf(TabixFile(fileName), param = p)[[1]]$rowRanges),  error=function(e) 0)
-    if(nSites >= minSites){
-      dat <- vcfWindow(fileName = fileName, ploidy = ploidy, param = p, header = vcfHeader, haploidize = haploidize)
-      dna <- as.DNAbin(dat)
-
-      dnaCat <- lapply(dna, function(x) as.character(x[1:length(x)]))
-
-      if(feature == "gene") {
-        geneName <- featureList[[x]]$Name[1]}else{
-          geneName <- paste0(featureList[[x]]$Name[1], "_exons")}
-
-      fastaName <- paste0(fastaOut, "/", geneName)
-      cat(file=fastaName, paste(paste0(">",names(dnaCat)), sapply(dnaCat, paste, collapse=""), sep="\n"), sep="\n")
-
-      dna <- list(dna)
-      names(dna) <- featureList[[x]]$Name[1]
-      dna
-    }
-  }) %>% unlist(recursive = FALSE)
-  genesList
 }

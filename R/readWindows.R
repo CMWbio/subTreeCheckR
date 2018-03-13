@@ -64,7 +64,7 @@ vcfHeader <- scanVcfHeader(fileName)
 contigMD <- as.data.frame(vcfHeader@header$contig)
 
 
-vcfWindows <- function(fileName, contigs, winSize, nCores, ploidy){
+vcfWindows <- function(fileName, contigs, contigMD, winSize, nCores, ploidy){
 
   lapply(contigs, function(con){
     length <- as.integer(filter(contigMD, rownames(contigMD) == con)$length)
@@ -83,7 +83,7 @@ vcfWindows <- function(fileName, contigs, winSize, nCores, ploidy){
 
         if(nSites >= minSites){
           #read in vcf
-          dna <- vcfWindow(fileName = fileName, contig = con, start, end, ploidy = ploidy)
+          dna <- vcfWindow(fileName = fileName, contig = con, start, end, ploidy = ploidy, haplodize = FALSE, )
           #make sequence matrix DNAbin from ape package
           dna <- list(as.DNAbin(dna))
           names(dna) <- paste0(con, ":", end, "..", start)

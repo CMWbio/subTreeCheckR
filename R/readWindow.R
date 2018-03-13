@@ -38,7 +38,7 @@ vcfWindow <-  function(fileName, contig, start, end, ploidy, param, header, hapl
   #haploidize sequence
   if(haploidize && ploidy == 2){
 
-    # code for diploids taken from BioStrings::IUPAC_CODE_MAP
+    # look up table for diploids taken from BioStrings::IUPAC_CODE_MAP
 
     code <- c("W", "S", "M", "K", "R", "Y")
 
@@ -52,11 +52,11 @@ vcfWindow <-  function(fileName, contig, start, end, ploidy, param, header, hapl
 
     vcfDF <- lapply(vcfDF, function(x){
 
-       col <- codevec[as.vector(x)]
+      col <- codevec[as.vector(x)]
 
     }) %>% bind_cols()
 
-      }else(
+  }else(
     #separate alleles from either "A/A" or "A|A" to "A" "A"
     vcfDF <- lapply(1:ncol(vcfDF), function(x){
       separate(vcfDF, colnames(vcfDF[x]), into = paste(colnames(vcfDF[x]), c(1:ploidy), sep = sep))[x:(x + (ploidy - 1))]

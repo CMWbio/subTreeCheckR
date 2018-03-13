@@ -148,37 +148,14 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
           #calculate dxy for populations from Nei 1987
 
           if("dxy" %in% stat){
-            dxy <- lapply(popList, function(x){
-              lapply(popList, function(y){
-                if(!setequal(x$sampleNames, y$sampleNames)){
-                  #population distance matrix for pairwise pop
-                  popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(y$sampleNames), 1:ploidy, paste, sep = "/"))]
-                  #make a tibble with the average number of pairwise differences
-                  dxy <- data_frame(mean(popD), sd(popD))
-                  #name col
-                  colnames(dxy) <-  paste0(x$pop[1], "v/" , y$pop[1], c("_dxy", "_SDdxy"))
-                  dxy
-                }
-              }) %>% bind_cols() #put all onto one row
-            })  %>% bind_cols() #bind rows together
+            dxy <- neisDxy(dist, popList)
           } else {
             dxy <- c()
           }
 
           #calculate nucleotide diversity from Nei 1987
           if("pi" %in% stat){
-            pi <- lapply(popList, function(x){
-              #make population matrix
-              popD <- dist[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")), as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/"))]
-              n <- ncol(popD)
-              # get nucleotide diversity
-              pi <- sum(popD)/(n*(n-1)/2)
-              #determine pi for pop
-              piDF <- data_frame(pi)
-              # set colnames
-              colnames(piDF) <- paste(x$pop[1],"pi", sep = "_")
-              piDF
-            }) %>% bind_cols() #put all onto one row
+            pi <- neisPi(dist, popList)
           } else {
             pi <- c()
           }
@@ -187,27 +164,8 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
           #can only calculate da if dxy and pi are known
           if(all(c("pi", "dxy", "da") %in% stat)){
 
-            da <- lapply(seq(from = 1, to = length(dxy), by = 2), function(x){
-              #get dxy pairwise comparison name from colnames of dxy
-              dxyName <- colnames(dxy)[x]
-              #remove the dxy from the end
-              compName <- gsub("_dxy", "", dxyName)
-              #get sample names
-              samples <- unlist(strsplit(compName, "v/"))
+           neisDa(dxy, pi)
 
-              #get pi for population x
-              xPi <- pi[[paste0(samples[1], "_pi")]]
-              #pi for population y
-              yPi <- pi[[paste0(samples[2], "_pi")]]
-
-              #carry out da calculation from Nei 1987
-              da <- dxy[[dxyName]] - ((xPi + yPi)/2)
-              #make tibble
-              da <- data_frame(da)
-              #colnames
-              colnames(da) <- paste0(compName, "_da")
-              da
-            }) %>% bind_cols()
           } else {
             da <- c()
           }

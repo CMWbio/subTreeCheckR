@@ -119,7 +119,7 @@ buildLocalTrees <- function(fileName, DNAwin = NA, contigs, winSize = 100000,
   }) %>% unlist(recursive = FALSE)
  }
   else {
-    nestedList <- lapply(1:15, function(x){
+    nestedList <- lapply(1:21, function(x){
       dist <- dist.dna(DNAwin[[x]], model = subModel, pairwise.deletion = TRUE)
       tree <- upgma(dist)
       tree$edge.length <- abs(tree$edge.length)

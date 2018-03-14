@@ -25,3 +25,4 @@ neisDa <- function(dxy, pi){
 
 
 }
+

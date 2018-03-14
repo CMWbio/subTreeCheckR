@@ -37,7 +37,7 @@
 # cladeStr <- data_frame(tipLabels = , cladeLabels = c(rep("I1", 8),rep("I2", 8),rep("O", 8)))
 #
 # trees <- read.tree("../Tree-TipR/PANAMA.ALLSHARED.w100.rerooted.nwk")
-#
+
 # subTrees <- read.tree("../PANAMA.ALLSHARED.w100.rerooted.nwk")
 #
 # distMList<- trees %>% lapply(FUN = function(x){
@@ -49,7 +49,7 @@
 # groups <-  c(rep("P3", 4), "t", "t", rep("P2", 4), "t", rep("P2", 4), "t")
 # cladeStr <- data_frame(samples = samples, cladeLabels = groups, groups = groups2)
 # #
-#
+
 # clad <- test[[1]]
 
 #####
@@ -82,17 +82,11 @@ topologyCheck <- function(trees, cladeStr){
       if(!any(data)) break
       }
     if(!data){
-      data.frame(treeType = "Discordant", window = treeN)
+
+      list(treeType = "Discordant", window = as.character(names(trees)[[treeN]]), tree = tree)
     }
 
-      }) %>% bind_rows()
+      })
+  plyr::compact(allTrees)
   }
-
-
-
-
-
-
-
-
 

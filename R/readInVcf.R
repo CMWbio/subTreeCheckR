@@ -4,11 +4,9 @@
 #'
 #' @details As reading in the variant data is currently the runtime bottleneck it is advised to run all statistics
 #' simultaniously to reduce overall runtime. \cr
-#' \cr
 #' \code{dxy}: Nei's absolute distance between two populations X and Y. \cr
 #' \code{pi}: Nei's within populaition nucleotide diversity. \cr
-#' \code{da}: Nei's net genetic distance between two populations X and Y \cr
-#' \code{Dt}: Tajimas D neutrality test.
+#' \code{da}: Nei's net genetic distance between two populations X and Y
 #'
 #'
 #' @param fileName A \code{character} vector of length one containing the full path name for a Tabix indexed VCF
@@ -170,37 +168,8 @@ popStatWindows <- function(fileName, contigs = "all", winSize = 100000,
             da <- c()
           }
 
-          #Tajimas nutrality test without an outgroup using polymorphic sites  for S
-          #Pi is needed to determine Tajima's D
-          if("Dt" %in% stat){
-            Dt <- lapply(popList, function(x){
-
-              if(length(x$sampleNames)*ploidy >= 4){
-
-                popBase <- s[as.vector(outer(as.character(x$sampleNames), 1:ploidy, paste, sep = "/")),]
-                dnaPop <- as.DNAbin(popBase)
-                Dt <- tajima.test(dnaPop)
-
-                Dt <- data_frame(Dt[[1]])
-                # set colnames
-                colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
-                Dt
-
-              } else{
-                Dt <- data_frame(NA)
-                colnames(Dt) <- paste(x$pop[1],"Dt", sep = "_")
-                Dt
-
-              }
-            }) %>% bind_cols()
-
-          } else {
-            Dt <- c()
-          }
-
-
           #bind all columns together
-          div <- bind_cols(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites, dxy, pi, da, Dt)
+          div <- bind_cols(scaffold = con, start = start, end = end, midpoint = (start + end) /2, nSites = nSites, dxy, pi, da)
 
         }
         else {
